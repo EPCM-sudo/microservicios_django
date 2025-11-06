@@ -1,0 +1,26 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Buscar Notas</title>
+  <link rel="stylesheet" href="{% static 'api_expedientes/styles.css' %}">
+</head>
+<body>
+  <h2>Buscar Notas de un Paciente</h2>
+
+  <label>Ingrese ID de Paciente: <input id="nss"></label>
+  <button onclick="buscar()">Buscar</button>
+
+  <pre id="resultado"></pre>
+
+  <script>
+    async function buscar(){
+      const id = document.getElementById('nss').value;
+      const res = await fetch(`/api/expedientes/seguro/buscar/?nss=${id}`);
+      const json = await res.json();
+      document.getElementById('resultado').textContent = JSON.stringify(json, null, 2);
+    }
+  </script>
+</body>
+</html>

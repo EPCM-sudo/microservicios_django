@@ -1,0 +1,18 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sistema de Expedientes</title>
+  <link rel="stylesheet" href="{% static 'api_expedientes/styles.css' %}">
+</head>
+<body>
+  <h1>Sistema de Expedientes - Notas Médicas</h1>
+  <nav>
+    <a href="{% url 'crear_nota_page' %}">Crear Nota Médica</a> |
+    <a href="{% url 'buscar_notas_page' %}">Buscar Notas</a> |
+    <a href="/admin/">Admin</a>
+  </nav>
+</body>
+</html>
+

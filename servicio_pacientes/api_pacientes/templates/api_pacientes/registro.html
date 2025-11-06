@@ -1,0 +1,49 @@
+{% load static %}
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Registro</title></head>
+<body>
+  <h2>Registrar Paciente</h2>
+  <form id="registroForm">
+    <label>Nombre: <input name="nombre" /></label><br/>
+    <label>Email: <input name="email" /></label><br/>
+    <label>NSS: <input name="nss" /></label><br/>
+    <label>Password: <input name="password" type="password" /></label><br/>
+    <button type="submit">Registrar</button>
+  </form>
+
+  <script>
+    // Obtener CSRF cookie (Django la provee)
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+      return v ? v.pop() : '';
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    document.getElementById('registroForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        nombre: e.target.nombre.value,
+        email: e.target.email.value,
+        nss: e.target.nss.value,
+        password: e.target.password.value
+      };
+      const res = await fetch('/api/pacientes/seguro/registro/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (res.ok) {
+        alert('Registrado, id: ' + json.id);
+        window.location.href = '/api/pacientes/perfil/' + json.id + '/';
+      } else {
+        alert('Error: ' + JSON.stringify(json));
+      }
+    });
+  </script>
+</body>
+</html>

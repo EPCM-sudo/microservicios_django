@@ -1,0 +1,44 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Crear Nota Médica</title>
+  <link rel="stylesheet" href="{% static 'api_expedientes/styles.css' %}">
+</head>
+<body>
+  <h2>Registrar Nota Médica</h2>
+
+  <form id="notaForm">
+    <label>ID Paciente: <input name="id_paciente"></label><br/>
+    <label>ID Doctor: <input name="id_doctor"></label><br/>
+    <label>Diagnóstico: <textarea name="diagnostico"></textarea></label><br/>
+    <label>Tratamiento: <textarea name="tratamiento"></textarea></label><br/>
+    <button type="submit">Guardar Nota</button>
+  </form>
+
+  <p id="msg"></p>
+
+  <script>
+    document.getElementById('notaForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        id_paciente: e.target.id_paciente.value,
+        id_doctor: e.target.id_doctor.value,
+        diagnostico: e.target.diagnostico.value,
+        tratamiento: e.target.tratamiento.value,
+      };
+      const res = await fetch('/api/expedientes/seguro/crear/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      document.getElementById('msg').innerText = res.ok
+        ? "✅ Nota registrada ID: " + json.id
+        : "❌ Error: " + JSON.stringify(json);
+    });
+  </script>
+</body>
+</html>
+

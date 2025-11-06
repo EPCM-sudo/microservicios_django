@@ -1,0 +1,15 @@
+{% load static %}
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Perfil</title></head>
+<body>
+  {% if paciente %}
+    <h2>Perfil: {{ paciente.nombre }}</h2>
+    <p>NSS: {{ paciente.nss }}</p>
+    <p>Email: {{ paciente.email }}</p>
+  {% else %}
+    <p>Paciente no encontrado.</p>
+  {% endif %}
+  <a href="{% url 'index' %}">Volver</a>
+</body>
+</html>
