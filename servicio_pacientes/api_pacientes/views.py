@@ -48,16 +48,45 @@ def registro_inseguro(request):
     logger.warning("EJECUTANDO SQL VULNERABLE: %s", sql)
 
     try:
-        with connection.cursor() as cursor:
+        with connection.cursor() as cursor: 
             cursor.execute(sql)
-            # intentar obtener lastrowid (sqlite/otros adaptan)
-            try:
-                inserted_id = cursor.lastrowid
-            except Exception:
-                inserted_id = None
-        return Response({"status": "ok", "note": "registro_inseguro ejecutado", "id": inserted_id}, status=201)
+            inserted_id = cursor.lastrowid
+            
+            print(f"inserted_id: {inserted_id}")
+            
+            # Consultar el usuario recién creado usando f-string (seguro porque inserted_id es int)
+            cursor.execute(f"""
+                SELECT id, nombre, fecha_nacimiento, nss, email, es_doctor 
+                FROM api_pacientes_paciente 
+                WHERE id = {inserted_id}
+            """)
+
+            usuario = cursor.fetchone()
+            print(f"usuario: {usuario}")
+            
+            if usuario:
+                return Response({
+                    'status': 'success',
+                    'message': 'Usuario creado (método inseguro)',
+                    'usuario_creado': {
+                        'id': usuario[0],
+                        'nombre': usuario[1],
+                        'fecha_nacimiento': usuario[2],
+                        'nss': usuario[3],
+                        'email': usuario[4],
+                        'es_doctor': bool(usuario[5]),
+                    },
+                    'warning': '⚠️ VULNERABLE A INYECCIÓN SQL',
+                    'sql_ejecutado': sql
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': 'Usuario creado pero no se pudo recuperar',
+                    'id': inserted_id
+                }, status=status.HTTP_201_CREATED)
+                
     except DatabaseError as e:
-        # devolver error legible en JSON en vez de traceback 500
         logger.error("SQL Error en registro_inseguro: %s", e, exc_info=True)
         return Response({"status": "error", "detail": str(e)}, status=400)
 
