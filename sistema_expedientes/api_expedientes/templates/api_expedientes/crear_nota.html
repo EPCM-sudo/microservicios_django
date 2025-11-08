@@ -10,7 +10,7 @@
   <h2>Registrar Nota Médica</h2>
 
   <form id="notaForm">
-    <label>ID Paciente: <input name="id_paciente"></label><br/>
+    <label>ID Paciente: <input name="nss_paciente"></label><br/>
     <label>ID Doctor: <input name="id_doctor"></label><br/>
     <label>Diagnóstico: <textarea name="diagnostico"></textarea></label><br/>
     <label>Tratamiento: <textarea name="tratamiento"></textarea></label><br/>
@@ -23,7 +23,7 @@
     document.getElementById('notaForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = {
-        id_paciente: e.target.id_paciente.value,
+        nss_paciente: e.target.nss_paciente.value,
         id_doctor: e.target.id_doctor.value,
         diagnostico: e.target.diagnostico.value,
         tratamiento: e.target.tratamiento.value,

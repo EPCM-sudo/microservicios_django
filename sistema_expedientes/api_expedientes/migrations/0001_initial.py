@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='NotaMedica',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('id_paciente', models.IntegerField()),
+                ('nss_paciente', models.IntegerField()),
                 ('id_doctor', models.IntegerField()),
                 ('diagnostico', models.TextField()),
                 ('tratamiento', models.TextField()),

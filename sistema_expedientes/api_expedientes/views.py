@@ -27,7 +27,7 @@ def buscar_notas_page(request):
 @api_view(['GET'])
 def buscar_inseguro(request):
     nss = request.GET.get("nss", "")
-    query = f"SELECT * FROM api_expedientes_notamedica WHERE CAST(id_paciente AS TEXT) = '{nss}';"
+    query = f"SELECT * FROM api_expedientes_notamedica WHERE CAST(nss_paciente AS TEXT) = '{nss}';"
     # Simulamos lookup por nss, pero dejando vulnerabilidad
     with connection.cursor() as cursor:
         cursor.execute(query)
@@ -45,7 +45,7 @@ def buscar_seguro(request):
     except (ValueError, TypeError):
         return Response([], status=200)
     
-    notas = NotaMedica.objects.filter(id_paciente=pid)
+    notas = NotaMedica.objects.filter(nss_paciente=pid)
     serializer = NotaMedicaSerializer(notas, many=True)
     return Response(serializer.data)
 

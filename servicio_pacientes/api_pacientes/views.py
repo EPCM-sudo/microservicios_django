@@ -8,8 +8,8 @@ from .serializers import PacienteSerializer
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 import logging
-import sqlite3
-
+from .utils import bool_to_int
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -38,32 +38,17 @@ def registro_inseguro(request):
     email = request.data.get('email', '')
     password = request.data.get('password', '')
     nss = request.data.get('nss', '')
+    es_doctor = bool_to_int(request.data.get('es_doctor', False))
 
     sql = f"""
         INSERT INTO api_pacientes_paciente (nombre, fecha_nacimiento, nss, email, password, es_doctor)
-        VALUES ('{nombre}', '{fecha_nacimiento}', '{nss}', '{email}', '{password}', 0);
+        VALUES ('{nombre}', '{fecha_nacimiento}', '{nss}', '{email}', '{password}', '{es_doctor}');
         """
     # registrar la consulta para debug
     logger.warning("EJECUTANDO SQL VULNERABLE: %s", sql)
 
     try:
         with connection.cursor() as cursor:
-            # Crear tabla si no existe
-            # cursor.execute("""
-            #     CREATE TABLE IF NOT EXISTS usuarios (
-            #         id INTEGER PRIMARY KEY AUTOINCREMENT,
-            #         nombre TEXT NOT NULL,
-            #         fecha TEXT NOT NULL,
-            #         email TEXT UNIQUE NOT NULL,
-            #         password TEXT NOT NULL,
-            #         nss TEXT NOT NULL,
-            #         es_doctor INTEGER DEFAULT 0
-            #     )
-            # """)
-            # cursor.execute("PRAGMA table_info(api_pacientes_paciente)")
-            # columnas = cursor.fetchall()
-            # for col in columnas:
-            #     print(col)
             cursor.execute(sql)
             # intentar obtener lastrowid (sqlite/otros adaptan)
             try:
@@ -92,18 +77,12 @@ def registro_seguro(request):
 @api_view(['GET'])
 def perfil(request, pk):
     """
-    Validando y usando ORM (seguro).
+    Versión segura del perfil: usa el ORM y el parámetro <pk> de la URL.
     """
-    raw_id = request.GET.get('id', '').strip()
     try:
-        pid = int(raw_id)
-    except (ValueError, TypeError):
-        return Response({"error": "id inválido"}, status=400)
-
-    try:
-        paciente = Paciente.objects.get(pk=pid)
+        paciente = Paciente.objects.get(pk=pk)
     except Paciente.DoesNotExist:
-        return Response({}, status=200)
+        return Response({"error": "Paciente no encontrado"}, status=404)
 
     serializer = PacienteSerializer(paciente)
     return Response(serializer.data, status=200)
@@ -132,3 +111,72 @@ def perfil_inseguro(request):
         return Response(results, status=200)
     except DatabaseError as e:
         return Response({"error": "SQL mal formada", "detail": str(e)}, status=400)
+
+#Modificar usuario inseguro
+@api_view(['PUT'])
+def actualizar_perfil_inseguro(request, id):
+    """
+    Endpoint inseguro: actualiza datos del paciente concatenando directamente SQL.
+    Vulnerable a SQL Injection y mass assignment.
+    """
+    data = request.data
+
+    # Construcción manual de pares campo=valor
+    updates = []
+    for key, value in data.items():
+        # convertir booleanos o None
+        if key == 'es_doctor':
+            v = bool_to_int(value)
+            updates.append(f"{key} = {v}")
+        elif value is None:
+            updates.append(f"{key} = NULL")
+        else:
+            # escape mínimo (no protege de inyección real)
+            val = str(value).replace("'", "''")
+            updates.append(f"{key} = '{val}'")
+
+    if not updates:
+        return Response({"error": "No hay campos para actualizar"}, status=400)
+
+    sql = f"UPDATE api_pacientes_paciente SET {', '.join(updates)} WHERE id = {id};"
+
+    logger.warning("EJECUTANDO SQL INSEGURA: %s", sql)
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+        return Response({"status": "ok", "note": "Actualización insegura ejecutada", "datos":updates}, status=200)
+    except DatabaseError as e:
+        logger.error("Error SQL inseguro: %s", e, exc_info=True)
+        return Response({"error": "Fallo en consulta insegura", "detail": str(e)}, status=400)
+
+#Modificar usuario seguro
+@api_view(['PUT'])
+def actualizar_perfil_seguro(request, id):
+    """
+    Endpoint seguro: usa ORM y validaciones para actualizar el perfil.
+    Solo permite modificar campos específicos.
+    """
+    try:
+        paciente = Paciente.objects.get(pk=id)
+    except Paciente.DoesNotExist:
+        return Response({"error": "Paciente no encontrado"}, status=404)
+
+    # Campos permitidos (whitelist)
+    campos_permitidos = {'nombre', 'fecha_nacimiento', 'email', 'nss', 'password'}
+
+    # Filtrar los datos entrantes
+    data = {k: v for k, v in request.data.items() if k in campos_permitidos}
+
+    # Validar formato NSS (ejemplo)
+    if 'nss' in data and not re.fullmatch(r'^[0-9]{4,30}$', data['nss']):
+        return Response({"error": "NSS inválido"}, status=400)
+
+    serializer = PacienteSerializer(paciente, data=data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        result = serializer.data
+        result.pop('password', None)  # no exponer contraseña
+        return Response(result, status=200)
+    else:
+        return Response(serializer.errors, status=400)
