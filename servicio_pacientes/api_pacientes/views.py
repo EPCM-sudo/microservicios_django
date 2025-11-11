@@ -51,9 +51,7 @@ def registro_inseguro(request):
         with connection.cursor() as cursor: 
             cursor.execute(sql)
             inserted_id = cursor.lastrowid
-            
-            print(f"inserted_id: {inserted_id}")
-            
+
             # Consultar el usuario recién creado usando f-string (seguro porque inserted_id es int)
             cursor.execute(f"""
                 SELECT id, nombre, fecha_nacimiento, nss, email, es_doctor 
@@ -62,7 +60,6 @@ def registro_inseguro(request):
             """)
 
             usuario = cursor.fetchone()
-            print(f"usuario: {usuario}")
             
             if usuario:
                 return Response({

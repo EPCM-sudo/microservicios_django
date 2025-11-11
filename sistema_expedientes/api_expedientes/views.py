@@ -27,6 +27,9 @@ def buscar_notas_page(request):
 @api_view(['GET'])
 def buscar_inseguro(request):
     nss = request.GET.get("nss", "")
+    if nss == '':
+        return Response({"error": "falta parametro nss"}, status=status.HTTP_400_BAD_REQUEST)
+
     query = f"SELECT * FROM api_expedientes_notamedica WHERE CAST(nss_paciente AS TEXT) = '{nss}';"
     # Simulamos lookup por nss, pero dejando vulnerabilidad
     with connection.cursor() as cursor:
